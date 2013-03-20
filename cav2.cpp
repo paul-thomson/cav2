@@ -106,8 +106,6 @@ void Draw() {
 
 				glVertex3f(y, z, 0);
 			}
-
-
 		}
 	glEnd();
 
