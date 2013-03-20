@@ -1,0 +1,27 @@
+CAV Assignment 2
+================
+
+Visualisation of human head
+
+
+Compiling
+---------
+
+To compile the program run `make`.
+
+
+Running
+-------
+
+To run the program use `./cav2`.
+
+
+Structure
+---------
+
+Place all source files in `src`.
+Place all header files in `include`.
+
+These will ensure they are compiled by the Makefile.
+
+Feel free to edit any of the provided files to add methods or functionality.
