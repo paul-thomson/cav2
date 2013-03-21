@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+using namespace std;
+
 
 #include <GL/glut.h>
 #define GLUT_KEY_ESCAPE 27
@@ -96,15 +99,18 @@ void Draw() {
 
 	for(int y = 0; y < head->GetHeight(); y++)
 		for(int z = 0; z < head->GetDepth(); z++) {
+
 			for (int x = head->GetWidth(); x > 0 ; x--) {
 
 				unsigned char val = head->Get(x, y, z);
 
 				double normalisedVal = val/255.0;
-				Vector3 color = redToWhite(normalisedVal);
-				glColor4f(color.r(), color.g(), color.b(), normalisedVal);
+				if (normalisedVal > 0.2) {
+					Vector3 color = redToWhite(normalisedVal);
+					glColor4f(color.r(), color.g(), color.b(), normalisedVal);
 
-				glVertex3f(y, z, 0);
+					glVertex3f(y, z, 0);
+				}
 			}
 		}
 	glEnd();
