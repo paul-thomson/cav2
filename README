@@ -1,0 +1,35 @@
+== General Process ==
+For this coursework I started off with the simple things and then did progressively more complex techniques. I will describe the final technique used, and then will describe the intermediate stages that were implemented to get to that final technique (which may not be of interest).
+
+== Final Draw Method ==
+The final drawing method is the function draw3DFrontToBack. It allows 3D rotation and draws from the front of the screen to the back using ray casting, to allow for early termination:
+
+1) Loops over each pixel of the screen (256x256)
+2) Computes the near voxel for each pixel
+3) From that voxel it casts a ray to the back (hardcoded distance: 256 units away). The stepsize is exactly one.
+4) For each location on the ray it uses trilinear interpolation to calculate the value at that position.
+5) If a value is above a certain threshold (to reduce noise) then the value is sent to the transfer function "manualValuesAndOpacities" to receive a colour and opacity.
+6) This colour is then added to the accumulated colour and alpha, as per the equations on slide 19, lecture 13.
+7) After the end of the ray is reached, or early termination occurs, the accumulated colour is displayed
+
+8) There is also an update function which updates the rotation matrix and the direction vector (pointing into the screen), to allow for interactive rotation.
+
+= Interactivity =
+1) Keys x, y, z can be pressed to interactively rotate the skull.
+2) Keys 1 and 2 can be pressed to switch between front-to-back and back-to-front, respectively.
+
+= Other Notes =
+- The dimensions of the skull are 256x256x100. However, when it is drawn the z dimension (100) appears squashed. To "unsquash" the skull, this dimension has been scaled to the same size as the others. This scaling of the dimension should cause the skull to appear pixelated, and it does on other methods. However since this method uses trilinear interpolation this is not noticeable.
+- The technique for trilinear interpolation was adapted from here: http://en.wikipedia.org/wiki/Trilinear_interpolation
+
+== Other Methods ==
+This is a list of other things which were done before the final method was achieved.
+
+- Greyscale transfer function
+- Red to white transfer function
+- Maximum intensity projection
+- Average value intensity
+- Back to front ray casting using in built OpenGL opacity blending
+- Back to front ray casting using manual opacity blending (from lecture slides)
+
+

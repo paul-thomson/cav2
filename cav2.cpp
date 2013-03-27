@@ -27,9 +27,6 @@ Matrix_3x3 rotationMatrix = Matrix_3x3::Id();
 void Update() {
 	startingPosition = Matrix_4x4::Translation(Vector3(128, 128, 128)) * rotationMatrix * Matrix_4x4::Translation(Vector3(-128, -128, -128)) * Vector3(0, 0, 0);
 	directionVector = rotationMatrix * Vector3(0, 0, 1);
-	//cout << startingPosition.r()  << "," << startingPosition.g() << "," << startingPosition.b() << "\n";
-	cout << directionVector.r()  << "," << directionVector.g() << "," << directionVector.b() << "\n";
-	cout << "UPDATED\n";
 	glutPostRedisplay();
 }
 
@@ -46,10 +43,10 @@ Vector3 redToWhite(double val) {
 }
 
 Vector4 manualColoursAndOpacities(double val) {
-	if (val < 0.3) {
-		return Vector4(0, 0, 1, 0.1);
-	} else if (val < 0.35) {
-		return Vector4(0, 1, 0, 0.05);
+	if (val < 0.32) {
+		return Vector4(0, 0, 1, 0.05);
+	} else if (val < 0.4) {
+		return Vector4(0, 1, 0, 0.1);
 	} else {
 		return Vector4(1, 0, 0, 0.2);
 	}
@@ -175,17 +172,21 @@ int withinBounds(int width, int height, int depth, Vector3 loc) {
 	}
 }
 
-void draw3D() {
+void draw3DBackToFront() {
+
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glBegin(GL_POINTS);
 
 	for(int c = 0; c < WIDTH; c++) {
 		for(int r = 0; r < HEIGHT; r++) {
 			//
-			Vector3 voxelLocation = rotationMatrix * Vector3(c, r, 0) + startingPosition + (directionVector * 100);
-			for (int i = 0; i < 100; i++) {
-				if (withinBounds(head->GetWidth(), head->GetHeight(), 256, voxelLocation) ) { //TODO 256 or depth?
-					unsigned char val = head->Get((int)voxelLocation.r(), (int)voxelLocation.g(), (int)(voxelLocation.b()*100.0/256.0));
+			Vector3 voxelLocation = rotationMatrix * Vector3(c, r, 0) + startingPosition + (directionVector * 256);
+			for (int i = 0; i < 256; i++) {
+				if (withinBounds(head->GetWidth(), head->GetHeight(), 256, voxelLocation) ) {
+					unsigned char val = head->Get((int)voxelLocation.r(), (int)voxelLocation.g(), (int)voxelLocation.b()*(100.0/256.0));
 
 					double normalisedVal = val/255.0;
 					if (normalisedVal > 0.3) {
@@ -198,9 +199,110 @@ void draw3D() {
 				voxelLocation -= directionVector;
 			}
 
-
-			}
 		}
+	}
+	glEnd();
+	glFlush();
+	glutSwapBuffers();
+}
+
+
+double trilinearInterpolate(double x, double y, double z) {
+	int x0 = (int)x;
+	int x1 = x0 + 1;
+	int y0 = (int)y;
+	int y1 = y0 + 1;
+	int z0 = (int)z;
+	int z1 = z0 + 1;
+
+	double xd = (x-x0)/(x1-x0);
+	double yd = (y-y0)/(y1-y0);
+	double zd = (z-z0)/(z1-z0);
+
+	double c00 = head->Get(x0, y0, z0)*(1-xd) + head->Get(x1, y0, z0)*xd;
+	double c10 = head->Get(x0, y1, z0)*(1-xd) + head->Get(x1, y1, z0)*xd;
+	double c01 = head->Get(x0, y0, z1)*(1-xd) + head->Get(x1, y0, z1)*xd;
+	double c11 = head->Get(x0, y1, z1)*(1-xd) + head->Get(x1, y1, z1)*xd;
+
+	double c0 = c00*(1-yd) + c10*yd;
+	double c1 = c01*(1-yd) + c11*yd;
+
+	return c0*(1-zd) + c1*zd;
+}
+void draw3DBackToFrontManual() {
+
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBegin(GL_POINTS);
+
+	for(int c = 0; c < WIDTH; c++) {
+		for(int r = 0; r < HEIGHT; r++) {
+
+			Vector3 voxelLocation = rotationMatrix * Vector3(c, r, 0) + startingPosition + (directionVector * 256);
+
+			Vector3 currentI = Vector3(0,0,0);
+
+			for (int i = 0; i < 256; i++) {
+				if (withinBounds(head->GetWidth(), head->GetHeight(), 256, voxelLocation) ) {
+					double val = trilinearInterpolate(voxelLocation.r(), voxelLocation.g(), voxelLocation.b()*(100.0/256.0));
+
+					double normalisedVal = val/255.0;
+					if (normalisedVal > 0.3) {
+						Vector4 color = manualColoursAndOpacities(normalisedVal);
+						Vector3 justColor = Vector3(color.r(),color.g(),color.b());
+						currentI = justColor*color.a() + currentI*(1-color.a());
+
+					}
+				}
+				voxelLocation -= directionVector;
+			}
+			glColor3f(currentI.r(), currentI.g(), currentI.b());
+			glVertex3f(c, r, 0);
+
+		}
+	}
+	glEnd();
+	glFlush();
+	glutSwapBuffers();
+}
+
+void draw3DFrontToBack() {
+
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBegin(GL_POINTS);
+
+	for(int c = 0; c < WIDTH; c++) {
+		for(int r = 0; r < HEIGHT; r++) {
+			double currentA = 0;
+			Vector3 currentI = Vector3(0,0,0);
+			Vector3 voxelLocation = rotationMatrix * Vector3(c, r, 0) + startingPosition;
+			for (int i = 0; i < 256; i++) {
+				if (withinBounds(head->GetWidth(), head->GetHeight(), 256, voxelLocation) ) {
+					double val = trilinearInterpolate(voxelLocation.r(), voxelLocation.g(), voxelLocation.b()*(100.0/256.0));
+
+					double normalisedVal = val/255.0;
+					if (normalisedVal > 0.2) {
+						Vector4 color = manualColoursAndOpacities(normalisedVal);
+						Vector3 justColor = Vector3(color.r(), color.g(), color.b());
+
+						currentI = currentI + justColor*color.a()*(1-currentA);
+						currentA = color.a() + currentA*(1-color.a());
+						if (currentA > 0.95) {
+							break;
+						}
+					}
+				}
+				voxelLocation += directionVector;
+			}
+			glColor4f(currentI.r(), currentI.g(), currentI.b(), currentA);
+			glVertex3f(c, r,0);
+		}
+	}
 	glEnd();
 	glFlush();
 	glutSwapBuffers();
@@ -223,6 +325,14 @@ void KeyEvent(unsigned char key, int x, int y) {
 		break;
 	case 'z':
 		rotationMatrix = rotationMatrix * Matrix_3x3::RotationZ(0.52);
+		Update();
+		break;
+	case '1':
+		glutDisplayFunc(draw3DFrontToBack);
+		Update();
+		break;
+	case '2':
+		glutDisplayFunc(draw3DBackToFrontManual);
 		Update();
 		break;
 	}
@@ -250,11 +360,10 @@ int main(int argc, char **argv) {
 
 	glDisable(GL_DEPTH_TEST);
 
-	glEnable(GL_BLEND);
-	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	glutKeyboardFunc(KeyEvent);
-	glutDisplayFunc(draw3D);
+	glutDisplayFunc(draw3DFrontToBack);
 	glutIdleFunc(Update);
 
 	glutMainLoop();
