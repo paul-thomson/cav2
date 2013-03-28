@@ -2,7 +2,7 @@ CC=g++
 
 INCS= -I ./include
 
-CFLAGS= $(INCS) -std=gnu++0x -Wall -O3 -g
+CFLAGS= $(INCS) -std=gnu++0x -O3 -Wall -g
 LFLAGS= -lglut -lGLU -lGL
 
 CPP_FILES= $(wildcard src/*.cpp)

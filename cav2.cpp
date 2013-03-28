@@ -210,10 +210,20 @@ void draw3DBackToFront() {
 double trilinearInterpolate(double x, double y, double z) {
 	int x0 = (int)x;
 	int x1 = x0 + 1;
+	if (x1 > 255) {
+		x1 = x0;
+	}
 	int y0 = (int)y;
 	int y1 = y0 + 1;
+	if (y1 > 255) {
+		y1 = y0;
+	}
 	int z0 = (int)z;
 	int z1 = z0 + 1;
+	if (z1 > 99) {
+		z1 = z0;
+	}
+
 
 	double xd = (x-x0)/(x1-x0);
 	double yd = (y-y0)/(y1-y0);
